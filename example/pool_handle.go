@@ -16,9 +16,13 @@ func PoolStart() {
 	for i := 0; i < 10000; i++ {
 		fmt.Println("i", i)
 		worker.PushJobFunc(func(args ...interface{}) pool.State {
-			fmt.Println("args", args)
-			time.Sleep(1 * time.Second)
-			return pool.StateOk
+			arg := args[0].([]interface{})
+			fmt.Println("args", args, "arg", arg)
+			time.Sleep(time.Second)
+			if arg[0].(int) > 100 {
+				return pool.StateOk
+			}
+			return pool.StateErr
 		}, i)
 	}
 	return
