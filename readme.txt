@@ -12,6 +12,8 @@
 # 初始化线程池
 worker := pool.NewWorker()
 newPool := pool.NewPool(name, 100, 1, worker)
+
+# 启动线程池
 newPool.Start()
 
 # 向线程池推送数据
