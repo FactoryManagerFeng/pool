@@ -1,8 +1,7 @@
 package logic
 
 import (
-	"code.qschou.com/vip/go_vip_common/dlog"
-	"code.qschou.com/vip/go_vip_common/pool"
+	"code.piupiu.com/pool"
 	"fmt"
 	"time"
 )
@@ -28,18 +27,18 @@ func PoolStart() {
 func PoolStop() {
 	p := pool.Get(name)
 	if p == nil {
-		dlog.Info("pool is empty", p)
+		fmt.Println("pool is empty", p)
 		return
 	}
 	p.Stop()
-	dlog.Info("pool is stop", p)
+	fmt.Println("pool is stop", p)
 	return
 }
 
 func PoolAdd() {
 	p := pool.Get(name)
 	if p == nil {
-		dlog.Info("pool is empty", p)
+		fmt.Println("pool is empty", p)
 		return
 	}
 	p.IncWorker(10)
@@ -49,7 +48,7 @@ func PoolAdd() {
 func PoolDes() {
 	p := pool.Get(name)
 	if p == nil {
-		dlog.Info("pool is empty", p)
+		fmt.Println("pool is empty", p)
 		return
 	}
 	p.DecWorker(19)
