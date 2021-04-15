@@ -10,6 +10,11 @@ var (
 	poolMap = make(map[string]*Pool)
 )
 
+const (
+	Capacity = 500
+	Running  = 1
+)
+
 type Pool struct {
 	name     string         //线程池名称，不同线程池有不同的名字
 	capacity int            //最大线程数
@@ -23,6 +28,12 @@ type Pool struct {
 func NewPool(name string, capacity, running int, worker *Worker) *Pool {
 	if p, ok := poolMap[strings.ToLower(name)]; ok {
 		return p
+	}
+	if capacity > Capacity {
+		capacity = Capacity
+	}
+	if running < Running {
+		running = Running
 	}
 	pool := &Pool{
 		name:     name,
