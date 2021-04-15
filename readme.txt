@@ -7,3 +7,32 @@
 # Job       任务定义
 # Worker    处理任务
 # Pool      控制Worker的数量
+
+
+# 初始化线程池
+worker := pool.NewWorker()
+newPool := pool.NewPool(name, 100, 1, worker)
+newPool.Start()
+
+# 向线程池推送数据
+worker.PushJobFunc(func(args ...interface{}) pool.State {
+    fmt.Println("args", args)
+    return pool.StateOk
+},1)
+
+#获取现有线程池
+p := pool.Get(name)
+if p == nil {
+    fmt.Println("pool is empty", p)
+    return
+}
+
+#停止线程池消费
+p.Stop()
+
+#增加消费线程
+p.IncWorker(10)
+
+
+#减少消费线程
+p.DecWorker(10)
