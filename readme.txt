@@ -35,6 +35,8 @@ p.Stop()
 #增加消费线程
 p.IncWorker(10)
 
-
 #减少消费线程
 p.DecWorker(10)
+
+#休眠10s
+p.Sleep(10)
