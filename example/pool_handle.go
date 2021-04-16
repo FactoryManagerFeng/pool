@@ -58,3 +58,12 @@ func PoolDes() {
 	p.DecWorker(19)
 	return
 }
+
+func PoolSleep() {
+	p := pool.Get(name)
+	if p == nil {
+		fmt.Println("pool is empty", p)
+		return
+	}
+	p.Sleep(5)
+}
