@@ -63,7 +63,6 @@ func (work *Worker) sleepControl() {
 			return
 		case isSleep := <-work.sleepNotify:
 			if isSleep {
-				work.sleepCtx, work.sleepCancelFunc = context.WithCancel(context.Background())
 				work.sleepCancelFunc()
 				time.Sleep(time.Second * time.Duration(work.sleepSeconds))
 				work.sleepSeconds = 0
