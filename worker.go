@@ -9,7 +9,7 @@ import (
 
 type Worker struct {
 	job             chan *Job
-	dec             chan bool
+	decNotify       chan bool
 	stopCtx         context.Context
 	stopCancelFunc  context.CancelFunc
 	done            func()
@@ -22,7 +22,7 @@ type Worker struct {
 func NewWorker() *Worker {
 	return &Worker{
 		job:         make(chan *Job),
-		dec:         make(chan bool),
+		decNotify:   make(chan bool),
 		sleepNotify: make(chan bool),
 	}
 }
@@ -46,7 +46,7 @@ func (work *Worker) createWorker(fu func()) {
 
 // 删除一个worker
 func (work *Worker) deleteWorker() {
-	work.dec <- true
+	work.decNotify <- true
 }
 
 // 停止整个workers
@@ -93,7 +93,7 @@ func (work *Worker) doWork() {
 				fmt.Println("job sleep,time:", work.sleepSeconds)
 				time.Sleep(time.Second * time.Duration(work.sleepSeconds))
 			}
-		case flag := <-work.dec:
+		case flag := <-work.decNotify:
 			if flag {
 				return
 			}
