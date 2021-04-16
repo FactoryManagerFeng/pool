@@ -25,6 +25,7 @@ func PoolStart() {
 			return pool.StateErr
 		}, i)
 	}
+	newPool.Stop()
 	return
 }
 

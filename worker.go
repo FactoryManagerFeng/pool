@@ -100,6 +100,9 @@ func (work *Worker) doWork() {
 		case job := <-work.job:
 			state := job.execute()
 			fmt.Println("job done,state:", state)
+		case <-time.After(15 * time.Second):
+			fmt.Println("long time no message,exit")
+			return
 		}
 	}
 }
