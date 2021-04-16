@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -67,6 +68,7 @@ func (p *Pool) IncWorker(num int) {
 	if num > surplus {
 		num = surplus
 	}
+	p.worker.sleepCtx, p.worker.sleepCancelFunc = context.WithCancel(context.Background())
 	for i := 0; i < num; i++ {
 		p.running++
 		p.wg.Add(1)
@@ -81,7 +83,7 @@ func (p *Pool) DecWorker(num int) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if num > p.running {
-		p.worker.stopAllWorker()
+		p.worker.stopWorker()
 		p.wg.Wait()
 		unRegister(p.name)
 		return
@@ -101,13 +103,16 @@ func (p *Pool) Start() {
 	if p.running > p.capacity {
 		return
 	}
-	var fu = func() { p.wg.Done() }
+
+	p.worker.stopCtx, p.worker.stopCancelFunc = context.WithCancel(context.Background())
+	p.worker.sleepCtx, p.worker.sleepCancelFunc = context.WithCancel(context.Background())
+	p.wg.Add(p.running + 1)
 	for i := 0; i < p.running; i++ {
-		p.wg.Add(1)
-		p.worker.createWorker(fu)
+		p.worker.createWorker(func() { p.wg.Done() })
 		fmt.Println("running", p.running)
 	}
 	register(p)
+	go p.worker.sleepControl()
 	return
 }
 
@@ -116,9 +121,14 @@ func (p *Pool) Stop() {
 	defer p.lock.Unlock()
 	p.lock.Lock()
 
-	p.worker.stopAllWorker()
+	p.worker.stopWorker()
 	p.wg.Wait()
 	unRegister(p.name)
 
 	return
+}
+
+// 休眠工作
+func (p *Pool) Sleep(seconds int64) bool {
+	return p.worker.sleepWorker(seconds)
 }

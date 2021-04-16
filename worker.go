@@ -3,20 +3,27 @@ package pool
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
+	"time"
 )
 
 type Worker struct {
-	job            chan *Job
-	dec            chan bool
-	stopCtx        context.Context
-	stopCancelFunc context.CancelFunc
-	done           func()
+	job             chan *Job
+	dec             chan bool
+	stopCtx         context.Context
+	stopCancelFunc  context.CancelFunc
+	done            func()
+	sleepSeconds    int64
+	sleepCtx        context.Context
+	sleepCancelFunc context.CancelFunc
+	sleepNotify     chan bool
 }
 
 func NewWorker() *Worker {
 	return &Worker{
-		job: make(chan *Job),
-		dec: make(chan bool),
+		job:         make(chan *Job),
+		dec:         make(chan bool),
+		sleepNotify: make(chan bool),
 	}
 }
 
@@ -31,11 +38,9 @@ func (work *Worker) PushJobFunc(f JobFunc, args ...interface{}) {
 	}
 }
 
-// 创建一个worker
+// 创建workers
 func (work *Worker) createWorker(fu func()) {
 	work.done = fu
-	work.stopCtx, work.stopCancelFunc = context.WithCancel(context.Background())
-
 	go work.doWork()
 }
 
@@ -45,8 +50,36 @@ func (work *Worker) deleteWorker() {
 }
 
 // 停止整个workers
-func (work *Worker) stopAllWorker() {
+func (work *Worker) stopWorker() {
 	work.stopCancelFunc()
+}
+
+// 休眠控制，当休眠到指定时间后，将时间重新设置为0
+func (work *Worker) sleepControl() {
+	defer work.done()
+	for {
+		select {
+		case <-work.stopCtx.Done():
+			return
+		case isSleep := <-work.sleepNotify:
+			if isSleep {
+				work.sleepCtx, work.sleepCancelFunc = context.WithCancel(context.Background())
+				work.sleepCancelFunc()
+				time.Sleep(time.Second * time.Duration(work.sleepSeconds))
+				work.sleepSeconds = 0
+			}
+		}
+	}
+}
+
+// 休眠整个workers
+func (work *Worker) sleepWorker(seconds int64) bool {
+	// 判断是否设置成功
+	if atomic.CompareAndSwapInt64(&work.sleepSeconds, 0, seconds) {
+		work.sleepNotify <- true
+		return true
+	}
+	return false
 }
 
 // worker具体处理逻辑
@@ -56,6 +89,11 @@ func (work *Worker) doWork() {
 		select {
 		case <-work.stopCtx.Done():
 			return
+		case <-work.sleepCtx.Done():
+			if work.sleepSeconds > 0 {
+				fmt.Println("job sleep,time:", work.sleepSeconds)
+				time.Sleep(time.Second * time.Duration(work.sleepSeconds))
+			}
 		case flag := <-work.dec:
 			if flag {
 				return
