@@ -96,11 +96,11 @@ func (p *Pool) DecWorker(num int) {
 }
 
 // 开始工作
-func (p *Pool) Start() {
+func (p *Pool) Start() bool {
 	defer p.lock.Unlock()
 	p.lock.Lock()
-	if p.running > p.capacity {
-		return
+	if p.running > p.capacity || p.running > 0 {
+		return false
 	}
 
 	p.worker.stopCtx, p.worker.stopCancelFunc = context.WithCancel(context.Background())
@@ -112,7 +112,7 @@ func (p *Pool) Start() {
 	}
 	register(p)
 	go p.worker.sleepControl()
-	return
+	return true
 }
 
 // 停止工作
