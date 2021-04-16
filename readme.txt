@@ -18,8 +18,13 @@ newPool.Start()
 
 # 向线程池推送数据
 worker.PushJobFunc(func(args ...interface{}) pool.State {
-    fmt.Println("args", args)
-    return pool.StateOk
+    arg := args[0].([]interface{})
+    fmt.Println("args", args, "arg", arg)
+    time.Sleep(time.Second)
+    if arg[0].(int) > 100 {
+        return pool.StateOk
+    }
+    return pool.StateErr
 },1)
 
 #获取现有线程池
