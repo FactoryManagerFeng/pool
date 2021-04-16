@@ -68,7 +68,6 @@ func (p *Pool) IncWorker(num int) {
 	if num > surplus {
 		num = surplus
 	}
-	p.worker.sleepCtx, p.worker.sleepCancelFunc = context.WithCancel(context.Background())
 	for i := 0; i < num; i++ {
 		p.running++
 		p.wg.Add(1)
