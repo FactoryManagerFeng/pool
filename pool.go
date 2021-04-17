@@ -80,7 +80,7 @@ func (p *Pool) DecWorker(num int) {
 func (p *Pool) Start() bool {
 	defer p.lock.Unlock()
 	p.lock.Lock()
-	if p.running > p.capacity || p.running > 0 {
+	if p.running > p.capacity || p.running <= 0 {
 		return false
 	}
 
@@ -112,11 +112,15 @@ func (p *Pool) Sleep(seconds int64) bool {
 	return p.worker.sleepWorker(seconds)
 }
 
-// 添加任务
+// 添加func到处理队列
 func (p *Pool) PushJobFunc(f JobFunc, args ...interface{}) {
-	p.worker.pushJobFunc(f, args)
+	p.worker.job <- &Job{
+		f:    f,
+		args: args,
+	}
 }
 
+// 添加任务到处理队列
 func (p *Pool) PushJob(job *Job) {
-	p.worker.pushJob(job)
+	p.worker.job <- job
 }

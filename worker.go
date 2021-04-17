@@ -19,17 +19,6 @@ type Worker struct {
 	sleepNotify     chan bool
 }
 
-func (work *Worker) pushJob(job *Job) {
-	work.job <- job
-}
-
-func (work *Worker) pushJobFunc(f JobFunc, args ...interface{}) {
-	work.job <- &Job{
-		f:    f,
-		args: args,
-	}
-}
-
 // 创建workers
 func (work *Worker) createWorker(fu func()) {
 	work.done = fu
