@@ -9,20 +9,23 @@ import (
 var name = "test"
 
 func PoolStart() {
-	worker := pool.NewWorker()
-	newPool := pool.NewPool(name, 100, 1, worker)
+	newPool, err := pool.NewPool(name, 100, 1)
+	if err != nil {
+		return
+	}
 	newPool.Start()
 
 	for i := 0; i < 10000; i++ {
 		fmt.Println("i", i)
-		worker.PushJobFunc(func(args ...interface{}) pool.State {
+		newPool.PushJobFunc(func(args ...interface{}) pool.JobResult {
+
 			arg := args[0].([]interface{})
 			fmt.Println("args", args, "arg", arg)
 			time.Sleep(time.Second)
 			if arg[0].(int) > 100 {
-				return pool.StateOk
+				return pool.JobResult{}
 			}
-			return pool.StateErr
+			return pool.JobResult{}
 		}, i)
 	}
 	newPool.Stop()

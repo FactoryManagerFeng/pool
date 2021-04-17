@@ -19,19 +19,11 @@ type Worker struct {
 	sleepNotify     chan bool
 }
 
-func NewWorker() *Worker {
-	return &Worker{
-		job:         make(chan *Job),
-		decNotify:   make(chan bool),
-		sleepNotify: make(chan bool),
-	}
-}
-
-func (work *Worker) PushJob(job *Job) {
+func (work *Worker) pushJob(job *Job) {
 	work.job <- job
 }
 
-func (work *Worker) PushJobFunc(f JobFunc, args ...interface{}) {
+func (work *Worker) pushJobFunc(f JobFunc, args ...interface{}) {
 	work.job <- &Job{
 		f:    f,
 		args: args,
@@ -98,8 +90,8 @@ func (work *Worker) doWork() {
 				return
 			}
 		case job := <-work.job:
-			state := job.execute()
-			fmt.Println("job done,state:", state)
+			result := job.execute()
+			fmt.Println("job done,result:", result)
 		case <-time.After(15 * time.Second):
 			fmt.Println("long time no message,exit")
 			return

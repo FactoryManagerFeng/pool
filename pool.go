@@ -7,10 +7,6 @@ import (
 	"sync"
 )
 
-var (
-	poolMap = make(map[string]*Pool)
-)
-
 const (
 	Capacity = 500
 	Running  = 1
@@ -26,9 +22,9 @@ type Pool struct {
 }
 
 // 初始化协程
-func NewPool(name string, capacity, running int, worker *Worker) *Pool {
+func NewPool(name string, capacity, running int) (*Pool, error) {
 	if p, ok := poolMap[strings.ToLower(name)]; ok {
-		return p
+		return p, ErrPoolHaveSameName
 	}
 	if capacity > Capacity {
 		capacity = Capacity
@@ -40,27 +36,16 @@ func NewPool(name string, capacity, running int, worker *Worker) *Pool {
 		name:     name,
 		capacity: capacity,
 		running:  running,
-		worker:   worker,
+		worker: &Worker{
+			job:         make(chan *Job),
+			decNotify:   make(chan bool),
+			sleepNotify: make(chan bool),
+		},
 	}
-	return pool
+	return pool, nil
 }
 
-func register(p *Pool) {
-	poolMap[strings.ToLower(p.name)] = p
-}
-
-func unRegister(name string) {
-	delete(poolMap, strings.ToLower(name))
-}
-
-func Get(name string) *Pool {
-	if p, ok := poolMap[strings.ToLower(name)]; ok {
-		return p
-	}
-	return nil
-}
-
-// 添加工作线程数
+// 添加工作线程数 最多添加到设置的最大线程数
 func (p *Pool) IncWorker(num int) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -77,21 +62,17 @@ func (p *Pool) IncWorker(num int) {
 	return
 }
 
-// 减少工作线程数
+// 减少工作线程数 最多减少到剩余一个工作线程
 func (p *Pool) DecWorker(num int) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if num > p.running {
-		p.worker.stopWorker()
-		p.wg.Wait()
-		unRegister(p.name)
-		return
+	if num >= p.running {
+		num = p.running - 1
 	}
 	for i := 0; i < num; i++ {
 		p.running--
 		p.worker.deleteWorker()
 	}
-	fmt.Println(p)
 	return
 }
 
@@ -108,7 +89,6 @@ func (p *Pool) Start() bool {
 	p.wg.Add(p.running + 1)
 	for i := 0; i < p.running; i++ {
 		p.worker.createWorker(func() { p.wg.Done() })
-		fmt.Println("running", p.running)
 	}
 	register(p)
 	go p.worker.sleepControl()
@@ -130,4 +110,13 @@ func (p *Pool) Stop() {
 // 休眠工作
 func (p *Pool) Sleep(seconds int64) bool {
 	return p.worker.sleepWorker(seconds)
+}
+
+// 添加任务
+func (p *Pool) PushJobFunc(f JobFunc, args ...interface{}) {
+	p.worker.pushJobFunc(f, args)
+}
+
+func (p *Pool) PushJob(job *Job) {
+	p.worker.pushJob(job)
 }
