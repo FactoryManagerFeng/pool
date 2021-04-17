@@ -16,14 +16,14 @@ newPool,err := pool.NewPool(name, 100, 1)
 newPool.Start()
 
 # 向线程池推送数据
-newPool.PushJobFunc(func(args ...interface{}) pool.JobResult {
+newPool.PushJobFunc(func(args ...interface{}) pool.State {
     arg := args[0].([]interface{})
     fmt.Println("args", args, "arg", arg)
     time.Sleep(time.Second)
     if arg[0].(int) > 100 {
-        return pool.JobResult{}
+        return pool.StateOk
     }
-    return pool.JobResult{}
+    return pool.StateErr
 }, i)
 
 #获取现有线程池
